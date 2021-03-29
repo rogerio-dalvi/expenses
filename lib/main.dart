@@ -2,7 +2,6 @@ import 'dart:math';
 import 'package:expenses/components/chart.dart';
 import 'package:expenses/components/transaction_form.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'components/transaction_form.dart';
 import 'components/transaction_list.dart';
 import 'models/transaction.dart';
@@ -12,8 +11,6 @@ main() => runApp(ExpensesApp());
 class ExpensesApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    // SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
-
     return MaterialApp(
       home: MyHomePage(),
       theme: ThemeData(
@@ -50,7 +47,7 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-  bool _showChart = false;
+  bool _showChart = true;
 
   _openTransactionFormModal(BuildContext context) {
     showModalBottomSheet(
@@ -90,21 +87,34 @@ class _MyHomePageState extends State<MyHomePage> {
 
   @override
   Widget build(BuildContext context) {
+    final mediaQuery = MediaQuery.of(context);
+    bool _isLandScape = mediaQuery.orientation == Orientation.landscape;
+
     final appBar = AppBar(
       title: Text(
         'Despesas Pessoais',
-        style: TextStyle(fontSize: 20 * MediaQuery.of(context).textScaleFactor),
+        style: TextStyle(fontSize: 20 * mediaQuery.textScaleFactor),
       ),
-      actions: [
+      actions: <Widget>[
+        if (_isLandScape)
+          IconButton(
+            icon: Icon(_showChart ? Icons.list : Icons.bar_chart_rounded),
+            onPressed: () {
+              setState(() {
+                _showChart = !_showChart;
+              });
+            },
+          ),
         IconButton(
           icon: Icon(Icons.add),
           onPressed: () => _openTransactionFormModal(context),
-        )
+        ),
       ],
     );
-    final availableHeigh = MediaQuery.of(context).size.height -
+
+    final availableHeigh = mediaQuery.size.height -
         appBar.preferredSize.height -
-        MediaQuery.of(context).padding.top;
+        mediaQuery.padding.top;
 
     return Scaffold(
       appBar: appBar,
@@ -112,26 +122,33 @@ class _MyHomePageState extends State<MyHomePage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text('Exibir Gráfico'),
-                Switch(
-                  value: _showChart,
-                  onChanged: (value) {
-                    setState(() {
-                      _showChart = value;
-                    });
-                  },
-                ),
-              ],
-            ),
+            // if (_isLandScape)
+            //   Row(
+            //     mainAxisAlignment: MainAxisAlignment.center,
+            //     children: [
+            //       Text('Exibir Gráfico'),
+            //       Switch(
+            //         value: _showChart,
+            //         onChanged: (value) {
+            //           setState(() {
+            //             _showChart = value;
+            //           });
+            //         },
+            //       ),
+            //     ],
+            //   ),
+            if (!_isLandScape || _showChart)
+              Container(
+                height: availableHeigh * (_isLandScape ? 0.50 : 0.30),
+                child: Chart(_recentTransactions),
+              ),
             Container(
-              height: availableHeigh * 0.30,
-              child: Chart(_recentTransactions),
-            ),
-            Container(
-              height: availableHeigh * 0.70,
+              height: availableHeigh *
+                  (_isLandScape && _showChart
+                      ? 0.50
+                      : _isLandScape
+                          ? 1
+                          : 0.70),
               child: TransactionList(_transactions, _removeTransaction),
             ),
           ],
